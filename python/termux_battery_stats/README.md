@@ -1,0 +1,1 @@
+#Battery stats for termux
