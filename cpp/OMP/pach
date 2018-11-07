@@ -1,0 +1,5 @@
+#!/bin/bash
+
+g++ -l boost_system  main.cpp -o bin/main
+
+./bin/main
