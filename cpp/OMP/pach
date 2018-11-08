@@ -1,5 +1,5 @@
 #!/bin/bash
 
-g++ -l boost_system  main.cpp -o bin/main
+g++  main.cpp -o bin/main -fopenmp
 
 ./bin/main

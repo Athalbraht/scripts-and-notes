@@ -17,17 +17,13 @@ Compiler flags:
 #pragma omp parallel <params>
 {...}
 ```
-
+**Master thread** - thread 0
 - _if(bool)_ - if true -> threads=1
 - _num_threads()_
-- _default(shared | none)_
-- _private(list)_
-- _firstprivate(list)_
-- _shared(list)_
 - _copyin(list)_
 - _reduction(op:list)_
 
-## Work Construct
+## Work Sharing Construction
 
 1. **FOR**
 ```cpp
@@ -40,16 +36,23 @@ Compiler flags:
     - auto
     - guided
     - runtime
-  * private
+  * _private_
   * ...
-  * _nowait_
-  
+  * _nowait_ - without barrier
+
 
 2. **SECTIONS**
 
 ```cpp
 #pragma omp sections <params>
-{...}
+{
+...
+  #pragma omp section
+  {
+    ...
+  }
+
+}//BARIERA
 ```
 
 3. **single**
@@ -58,6 +61,22 @@ Compiler flags:
 #pragma omp single <params>
 {...}
 ```
+## Data Scope Attribute Clauses
+
+- _default(shared | none)_
+- _private(list)_
+- _firstprivate(list)_
+- _shared(list)_
+- _threadprivate_
+
+## Sync Constructructions
+
+- *master*
+- *critical*
+- *ordered*
+- *atomic*
+- *flush*
+- *barrier*
 
 ## Other
 
