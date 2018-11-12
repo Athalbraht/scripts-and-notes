@@ -1,7 +1,7 @@
 #include <omp.h>
 #include <stdio.h>
 #include <unistd.h>
-
+#include <iostream>
 
 class X
 {
@@ -29,80 +29,62 @@ class X
 		}
 };
 
-int main()
-{
-	const int t= 1000000;
-#pragma omp parallel
-#pragma omp for schedule(dynamic,1)
-	for(int i=0;i<10;i++)
-	{
-		printf("T:%d i:%d\n",omp_get_thread_num(),i);
-	}
 
-	int a[1];
-	a[0] = 0;
-#pragma omp parallel 
-#pragma omp for schedule(dynamic,1)  reduction(-:a)
-	for(int i=0;i<10;i++)
-	{
-		a[0] -= i;
-		printf("T:%d i:%d\n",omp_get_thread_num(),i);
-	}
-
-printf("a=%d",a[0]);
-
-#pragma omp parallel sections
+int main(int argc,char** argv)
 {
-#pragma omp section
+	
+X* obj = new X();
+int time = 1000000;
+int tr;
+tr=atoi(argv[1]);
+//std::cin>>tr;
+//std::cout<<typeid(tr).name()<<std::endl;
+omp_set_num_threads(tr);
+
+#pragma omp parallel shared(tr)
 {
-usleep(t);
-printf("a\n");
-usleep(t);
+#pragma omp for schedule(static,4) nowait
+for(int i=0;i<10;i++)
+{
+	printf("i=%d (Thread:%d/%d)\n", i, omp_get_thread_num(), omp_get_num_threads());
+	usleep(time);
+}
+#pragma omp atomic
+tr++;
+#pragma omp single
+{
+printf(" Single %d  proc %d \n", omp_get_thread_num(),omp_get_num_procs());
+usleep(time);}
+
+#pragma omp sections
+{
+	#pragma omp section
+	{printf("sec 1 (Thread:%d/%d)\n", omp_get_thread_num(), omp_get_num_threads());usleep(time);}
+	#pragma omp section
+	{printf("sec 2 (Thread:%d/%d)\n", omp_get_thread_num(), omp_get_num_threads());usleep(time);}
+	#pragma omp section
+	{printf("sec 3 (Thread:%d/%d)\n", omp_get_thread_num(), omp_get_num_threads());usleep(time);}
+}
+}
+printf("inv barrier-----------\n");
+#pragma omp parallel for schedule(static,1) num_threads(2)
+for(int i=0;i<10;i++)
+{
+	printf("-j=%d (Thread:%d/%d)\n", i, omp_get_thread_num(), omp_get_num_threads());
 }
 
-#pragma omp section
+obj->seta();
+obj->setb();
+int temp = 0;
+#pragma omp parallel sections default(none) shared(obj) lastprivate(temp)
 {
-usleep(t);
-printf("b\n");
-usleep(t);
+#pragma omp section
+{obj->b=1;temp=99;}
+#pragma omp section
+{obj->a[1]=10;}	
 }
-#pragma omp section
-{
-usleep(t);
-printf("c\n");
-}}
-#pragma omp parallel
-#pragma omp master
-{printf("critical= %d\n",omp_get_thread_num());
-usleep(t*3);
-}
-
-
-X* ob = new X();
-#pragma omp parallel sections shared(ob)
-{
-#pragma omp section
-	{ob->seta();}
-#pragma omp section
-	{ob->setb();}
-}
-ob->print();
-
-
-
-struct en_omp
-{
-	int a;
-	int b;
-};
-
-en_omp* xd = new en_omp();
-xd -> a = 1;
-xd -> b = 2;
-
-printf("xd %d %d", xd->a,xd->b);
-
-
+obj->print();
+printf("temp=%d\n",temp);
 return 0;
 
 
