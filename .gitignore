@@ -1,2 +1,11 @@
-a.out
+*.out
+*.swp
+*.pyc
+*dist/
+*venv*
+*dist*
+*build*
+*.egg*
+*pycache*
+*.log
 
