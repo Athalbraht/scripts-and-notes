@@ -13,9 +13,12 @@ import os
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 handler = logging.FileHandler('gpg_handler.log')
+handler2 = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
+handler2.setFormatter(formatter)
 log.addHandler(handler)
+log.addHandler(handler2)
 
 """
 TODO
