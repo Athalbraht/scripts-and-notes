@@ -29,7 +29,7 @@ def gen_mac():
     rand.seed(time())
     mac = []
     for i in range(6):
-        mac.append(hex(rand.randint(1,255))[2:])
+        mac.append(hex(rand.randint(16,255))[2:])
     mac = ":".join(mac)
     return mac
 
