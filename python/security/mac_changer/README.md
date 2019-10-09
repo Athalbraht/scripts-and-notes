@@ -2,6 +2,8 @@
 
 ## Installation
 
+The script uses ifconfig to change MAC adress therefore you should use root permissions.
+
 `python setup.py install`
 
 ## Usage
