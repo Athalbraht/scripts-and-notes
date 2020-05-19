@@ -20,7 +20,7 @@ echo "#: $# ?: $?"
 
 function test1
 {
-echo "function test1 $1"
+	echo "function test1 $1"
 }
 
 test2()
@@ -47,4 +47,3 @@ while [ $c -lt 2 ]; do
 	let c+=1
 	echo "c: $c"
 done
-
