@@ -22,3 +22,4 @@
       - [mac\_changer](python/security/mac_changer) - module to change MAC adress 
    - [termux\_battery_stats](python/termux_battery_stats) - script for saving information about battery (from Termux app for Android)
 - WebApps 
+- Notes
