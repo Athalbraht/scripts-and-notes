@@ -8,7 +8,7 @@
 
 from random import uniform,randint
 from numpy import dot, linspace
-from Neuron import *
+from .Neuron import *
 
 class Network(Neuron):
     '''
