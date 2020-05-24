@@ -6,12 +6,13 @@
 # Author: Albert Szadziński      #
 ##################################
 
-from random import uniform,randint
+from random import *
 from math import exp
 import numpy as np
-from numpy import dot, linspace
+dot = np.dot
+linspace = np.linspace
 
-'''-------------------------------------------------------'''
+
 class Neuron(): 
     '''
     Simple neuron model with two learning methods: delta rule and adaline.
