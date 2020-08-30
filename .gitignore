@@ -8,4 +8,12 @@
 *.egg*
 *pycache*
 *.log
+*.sty
+*.nav
+*.pdf
+*.toc
+*.vrb
+*.eps
+*.aux
+*.snm
 
