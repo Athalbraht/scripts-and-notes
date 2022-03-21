@@ -5,8 +5,9 @@ deps = ["click", "pandas", "matplotlib", "scipy"]
 setup(
     name="DRSpy",
     description="Data loader for DRS4-psi",
-    version="1.0",
-    author="Albert Szadziński",
+    version="0.9",
+    url="https://github.com/aszadzinski/scripts-and-notes/tree/master/python/DRS4-PSI",
+    author="aszadzinski",
     license="MIT",
     requires=deps,
     install_requires=deps,
