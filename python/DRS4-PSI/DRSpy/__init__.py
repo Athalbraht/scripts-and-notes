@@ -18,6 +18,14 @@ def main(_ftype, _ext, _recursive, _file):
     elif _ftype == 'xml':
         raise Exception("Function temporary unavailable")
 
+def log(msg, color="white", wait=False):
+    if wait:
+        print(click.style(msg, fg=color), end="")
+    else:
+        print(click.style(msg, fg=color), end="")
+    return None
+        
+
 if __name__ == '__main__':
     main()
 
