@@ -1,31 +1,40 @@
+__version__ = "0.9"
 import os
 import click
-import  matplotlib
-matplotlib.use("Agg")
-import  matplotlib.pyplot as plt
-import pandas as pd
 
-from scipy.optimize import curve_fit
+def print_version(ctx, param, value):
+    if not value or ctx.resilient_parsing:
+        return
+    print(f"DRSpy v{__version__}")
+    ctx.exit()
 
-@click.command()
-@click.option('-f','--file', '_file', help='Choose input file', required=True, type=str)
-@click.option('-t','--type', '_ftype', help='Choose input file formatting', required=True, type=click.Choice(['txt', 'xml']))
-@click.option('-e','--ext', '_ext', help='Output plot extension', default='png', type=click.Choice(['png', 'pdf']), show_default=True)
-@click.option('-r', '--recursive', '_recursive', help='Load all [type] files e.g. ./main.py -e txt -r -f .')
-def main(_ftype, _ext, _recursive, _file):
-    if _ftype == 'txt':
+@click.group(invoke_without_command=True)
+@click.option('-t','--type', 'ftype', help='Choose input file formatting', required=True, type=click.Choice(['txt', 'xml']))
+@click.option('-e','--plot-ext', 'ext', help='Plot output extension', default='png', type=click.Choice(['png', 'pdf']), show_default=True)
+@click.option('-a', '--auto-decode', 'fadecode', help='Load additional information from filename. Supported name: <+-pos>_<C|U|D>_(opt.t)', is_flag=True, default=False)
+@click.option('-v', '--verbose', 'fverbose', help='Enable verbosity mode', is_flag=True, default=False)
+@click.option('--version', is_flag=True, callback=print_version, expose_value=False, is_eager=True)
+def main(ftype, ext, fadecode, fverbose):
+    if ftype == 'txt':
         raise Exception("Function temporary unavailable")
-    elif _ftype == 'xml':
+    elif ftype == 'xml':
         raise Exception("Function temporary unavailable")
+
+@main.command()
+@click.argument("files", nargs=-1)
+@click.option('-q', '--verboseq', 'q', help='Enable verbosity mode', is_flag=True, default=False)
+def genCfg(files, q):
+    print("gencfg")
+    pass
 
 def log(msg, color="white", wait=False):
     if wait:
         print(click.style(msg, fg=color), end="")
     else:
-        print(click.style(msg, fg=color), end="")
+        print(click.style(msg, fg=color))
     return None
         
 
 if __name__ == '__main__':
-    main()
+    print(f"Started: DRSpy v{__version__}")
 
