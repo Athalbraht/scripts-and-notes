@@ -13,7 +13,7 @@ setup(
     install_requires=deps,
     packages=['DRSpy'],
     entry_points={
-        'console_scripts': ['drspy = DRSpy:main']
+        'console_scripts': ['drspy = DRSpy.main:main']
     }
 )
 

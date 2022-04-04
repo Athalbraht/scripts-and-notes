@@ -1,6 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from DRSpy import log, click
+from DRSpy.main import log, click
 
 import  matplotlib
 matplotlib.use("Agg")
