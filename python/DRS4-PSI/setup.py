@@ -1,3 +1,4 @@
+import DRSpy
 from setuptools import setup
 
 deps = ["click", "pandas", "matplotlib", "scipy"]
@@ -5,7 +6,7 @@ deps = ["click", "pandas", "matplotlib", "scipy"]
 setup(
     name="DRSpy",
     description="Data loader for DRS4-psi",
-    version="0.9",
+    version=DRSpy.__version__,
     url="https://github.com/aszadzinski/scripts-and-notes/tree/master/python/DRS4-PSI",
     author="aszadzinski",
     license="MIT",

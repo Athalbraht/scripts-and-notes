@@ -1,9 +1,11 @@
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 from DRSpy.main import log, click
 
 import  matplotlib
-matplotlib.use("Agg")
+import linecache
+#matplotlib.use("Agg")
 import  matplotlib.pyplot as plt
 
 from scipy.optimize import curve_fit
@@ -43,17 +45,48 @@ class DataStruct():
             log(f"\n---> Updating DF Failed {e}")
         else:
             if self._fverbose: log("Done", "green")
-
-    def _autodecode(self):
+    
+    def _auto_recognize(self, path):
         try:
-            log("---> Trying to decode filenames: ", wait=True)
+            log("---> Trying to decode files.", wait=True)
+            filenames = os.listdir(path)
+            print(filenames)
+            txt_files = [file for file in filenames if ".txt" in file]
+            xml_files = [file for file in filenames if ".xml" in file]
+            xml_files = [ os.path.join(path, f)  for f in xml_files]
+            txt_files = [ os.path.join(path, f)  for f in txt_files]
+            txt_filesPtP = []
+            txt_filesDelay = []
+            header = ""
+            for file in txt_files:
+                try:
+                    header = linecache.getline(file, 1)
+                except Exception as e:
+                    log(f"\n---> Failed to decode {file} file:  {e}", "red")
+                else:
+                    if "Pk-Pk" in header:
+                        txt_filesPtP.append(file)
+                    elif "delay" in header:
+                        txt_filesDelay.append(file)
+                    else:
+                        log(f"---> Unknow file content {file}. Line 1: {header}", "yellow")
+
         except Exception as e:
-            log(f"\n---> Failed to decode filenames {e}", "red")
+            log(f"\n---> Failed to decode files {e}", "red")
         else:
-            log("Pass", "green")
+            log(f"---> Loaded: {len(xml_files)} .xml, {len(txt_files)} .txt (p2p-{len(txt_filesPtP)}, delay-{len(txt_filesDelay)})")
+            if txt_filesPtP:
+                for file in txt_filesPtP:
+                    self.load_file(file, "PtP") 
+            if txt_filesDelay:
+                for file in txt_filesDelay:
+                    self.load_file(file, "delay") 
+                
+    
+
 
     def initialize(self, fPtP=True, fdelay=True, fxml=True):
-        if self._fadecode: self._autodecode()
+        if self._fadecode: self._auto_recognize(path)
         if fPtP:
             with click.progressbar(self._fPtP, label="---> Loading Peak2Peak files: ") as bar:
                 for file in bar: self.load_file(file, "PtP")
@@ -66,6 +99,7 @@ class DataStruct():
             pass
 
     def load_file(self, filename, ftype):
+        header = 0
         if ftype == "PtP":
             try:
                 if self._fverbose: log("---> Converting (CH0, CH1) to DataFrame: ", wait=True)
