@@ -15,8 +15,12 @@ class DataStruct():
         DataStruct class
     """
 
-    def __init__(self, fPtP=[], fdelay=[], fxml=[], fadecode=False, fverbose=False):
+    def __init__(self, fPtP=[], fdelay=[], fxml=[], fadecode=False, fverbose=False, db_exists=False):
+        if fadecode:
+            self._auto_recognize(fadecode)
         self._data = pd.DataFrame({"Channel":[], "ChannelX":[], "Delay [ns]":[], "DelayX":[]})
+        if db_exists:
+            pd.read_csv(db_exists)
         # row cuts for files
         self.cuts = {
                         "PtP-CH0"   : [3, 153],
@@ -32,6 +36,12 @@ class DataStruct():
         log(f"---> Waveform files to load: ", wait=True); log(f"{len(fdelay)}","green")
         log(f"---> Cuts: ", wait=True); log(f"{self.cuts}","green")
 
+    @classmethod
+    def import_db(cls, path):
+        log(f"Importint DB {path}: ", wait=True); 
+        new_instance = DataStruct()
+        new_instance.data
+        
     @property
     def data(self):
         return self._data
@@ -74,16 +84,10 @@ class DataStruct():
         except Exception as e:
             log(f"\n---> Failed to decode files {e}", "red")
         else:
+            self._fPtP.extend(txt_filesPtP)
+            self._fdelay.extend(txt_filesDelay)
+            self._fxml.extend(xml_files)
             log(f"---> Loaded: {len(xml_files)} .xml, {len(txt_files)} .txt (p2p-{len(txt_filesPtP)}, delay-{len(txt_filesDelay)})")
-            if txt_filesPtP:
-                for file in txt_filesPtP:
-                    self.load_file(file, "PtP") 
-            if txt_filesDelay:
-                for file in txt_filesDelay:
-                    self.load_file(file, "delay") 
-                
-    
-
 
     def initialize(self, fPtP=True, fdelay=True, fxml=True):
         if self._fadecode: self._auto_recognize(path)
@@ -98,25 +102,39 @@ class DataStruct():
         if fxml:
             pass
 
+    def plot(self, X=None, Y=None, xreg="", yreg="", figsize=(12,4), fkind="line",ext="pdf"):
+        x = []; y = []
+        for col in self.data.columns:
+            if xreg in col: x.append(col)
+            if yreg in col: y.append(col)
+        for regx in xreg:
+            fig, ax = plt.subplots(figsize=figsize)
+            for regy in yreg:
+                self.data.plot(regx, regy, kind=fkind, ax=ax)
+            plt.savefig(f"regx.{ext}")
+            plt.clf()
+
+        
+
     def load_file(self, filename, ftype):
-        header = 0
+        header = filename.split("/")[-1]
         if ftype == "PtP":
             try:
                 if self._fverbose: log("---> Converting (CH0, CH1) to DataFrame: ", wait=True)
                 ch0 = pd.read_table(    filename,
                                         skiprows=lambda x: x not in range(self.cuts["PtP-CH0"][0], self.cuts["PtP-CH0"][1]+1),
-                                        names=["Channel", "ChannelX", f"{filename[:-4]}-CH0_Counts"])
+                                        names=["Channel", "ChannelX", f"{header[:-4]}-CH0_Counts"])
                 if self._fverbose: log("(Done, ","green", wait=True)
                 ch1 = pd.read_table(    filename,
                                         skiprows=lambda x: x not in range(self.cuts["PtP-CH1"][0], self.cuts["PtP-CH1"][1]+1),
-                                        names=["Channel", "ChannelX", f"{filename[:-4]}-CH1_Counts"])
+                                        names=["Channel", "ChannelX", f"{header[:-4]}-CH1_Counts"])
                 if self._fverbose: log("Done), ","green", wait=True)
                 log("  ", wait=True)
                 ch01 = pd.merge(ch0,ch1, on=["Channel", "ChannelX"], how="outer")
                 if self._fverbose: log("MERGED","green")
 
             except Exception as e:
-                log(f"\n---> Converting to DataFrame failed: {e}","red")
+                log(f"\n---> Converting to DataFrame failed. File {filename}: {e}","red")
                 return False
             else:
                 self.data = ch01
@@ -126,10 +144,10 @@ class DataStruct():
                 if self._fverbose: log("---> Converting Delay to DataFrame: ", wait=True)
                 _delay = pd.read_table( filename,
                                         skiprows=lambda x: x not in range(self.cuts["Delay"][0], self.cuts["Delay"][1]+1),
-                                        names=["Delay [ns]", "DelayX", f"{filename[:-4]}-Delay_Counts"])
+                                        names=["Delay [ns]", "DelayX", f"{header[:-4]}-Delay_Counts"])
                 if self._fverbose: log("Done","green")
             except Exception as e:
-                log(f"\n---> Converting to DataFrame failed: {e}","red")
+                log(f"\n---> Converting to DataFrame failed. File {filename}: {e}","red")
             else:
                 self.data = _delay
                 return True
