@@ -15,12 +15,8 @@ class DataStruct():
         DataStruct class
     """
 
-    def __init__(self, fPtP=[], fdelay=[], fxml=[], fadecode=False, fverbose=False, db_exists=False):
-        if fadecode:
-            self._auto_recognize(fadecode)
+    def __init__(self, fPtP=[], fdelay=[], fxml=[], fadecode=False, fverbose=False, db_exists=False, fdata=None, fconfig="files.conf"):
         self._data = pd.DataFrame({"Channel":[], "ChannelX":[], "Delay [ns]":[], "DelayX":[]})
-        if db_exists:
-            pd.read_csv(db_exists)
         # row cuts for files
         self.cuts = {
                         "PtP-CH0"   : [3, 153],
@@ -28,7 +24,11 @@ class DataStruct():
                         "Delay"     : [3, 154]}
         self._fPtP, self._fdelay, self._fxml = fPtP, fdelay, fxml
         self._fadecode, self._fverbose = fadecode, fverbose
-        log(f"-> Creating DataFrame: ")
+        self._config = fconfig
+        if fadecode:
+            self._auto_recognize(fadecode)
+        log(f"-> Creating DataFrame: {self.config}")
+        self.init_conf(fconfig)
         if self._fverbose: log("---> Verbose mode: ", wait=True); log("Enabled", "green")
         log(f"---> Filename autodecode: ", wait=True); log("Enabled", "green") if fadecode else log("Disabled", "red")
         log(f"---> Peak-to-Peak files to load: ", wait=True); log(f"{len(fPtP)}","green")
@@ -36,12 +36,39 @@ class DataStruct():
         log(f"---> Waveform files to load: ", wait=True); log(f"{len(fdelay)}","green")
         log(f"---> Cuts: ", wait=True); log(f"{self.cuts}","green")
 
+    def init_conf(self, new_csv="data.csv"):
+        if os.path.isfile(new_csv):
+            log(f"-> Configuration file exists: {new_csv} Replace [y/n]?", wait=True)
+            rep = input().upper()
+            if rep == "Y":
+                del self.config
+                #os.remove(new_csv)
+            else:
+                try:
+                    self._data.read_csv(new_csv)
+                except Exception as e:
+                    log(f"---> Failed to load configuration file {new_csv}", "red")
+                else:
+                    
     @classmethod
     def import_db(cls, path):
         log(f"Importint DB {path}: ", wait=True); 
         new_instance = DataStruct()
         new_instance.data
-        
+    
+    @property
+    def config(self):
+        return self._config
+    
+    @config.setter
+    def config(self, *args):
+        self._data.read_csv(self.config)
+    
+    @config.deleter
+    def config(self):
+        os.remove(self.config)
+        log(f"---> Deleted configuration file {self.config}", "yellow")
+
     @property
     def data(self):
         return self._data
@@ -56,7 +83,7 @@ class DataStruct():
         else:
             if self._fverbose: log("Done", "green")
     
-    def _auto_recognize(self, path):
+    def auto_recognize(self, path):
         try:
             log("---> Trying to decode files.", wait=True)
             filenames = os.listdir(path)
@@ -102,16 +129,21 @@ class DataStruct():
         if fxml:
             pass
 
-    def plot(self, X=None, Y=None, xreg="", yreg="", figsize=(12,4), fkind="line",ext="pdf"):
+    def plot(self, xreg=[], yreg=[], figsize=(12,4), fkind="line",ext="pdf"):
         x = []; y = []
         for col in self.data.columns:
             if xreg in col: x.append(col)
             if yreg in col: y.append(col)
-        for regx in xreg:
+        print(x)
+        print(y)
+        for xs in x:
             fig, ax = plt.subplots(figsize=figsize)
-            for regy in yreg:
-                self.data.plot(regx, regy, kind=fkind, ax=ax)
-            plt.savefig(f"regx.{ext}")
+            for ys in y:
+                try:
+                    self.data.plot(xs, ys, kind=fkind, ax=ax)
+                except:
+                    print("x")
+            plt.savefig(f"{xs}.{ext}")
             plt.clf()
 
         

@@ -9,13 +9,14 @@ def print_version(ctx, param, value):
     ctx.exit()
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.group(invoke_without_command=True, context_settings=CONTEXT_SETTINGS)
-@click.option('-t','--type', 'ftype', help='Choose input file formatting', type=click.Choice(['txt', 'xml']), default=None)
-@click.option('-e','--plot-ext', 'ext', help='Plot output extension', default='png', type=click.Choice(['png', 'pdf']), show_default=True)
-@click.option('-a', '--auto-decode', 'fadecode', help='Load additional information from filename. Supported name: <+-pos>_<C|U|D>_(opt.t)', is_flag=True, default=False)
+@click.option('-d','--db', 'fdb', help='Database location', type=str, default="data.csv", show_default=True)
+#@click.option('-t','--type', 'ftype', help='Choose input file formatting', type=click.Choice(['txt', 'xml']), default=None)
+#@click.option('-e','--plot-ext', 'ext', help='Plot output extension', default='png', type=click.Choice(['png', 'pdf']), show_default=True)
+#@click.option('-a', '--auto-decode', 'fadecode', help='Load additional information from filename. Supported name: <+-pos>_<C|U|D>_(opt.t)', is_flag=True, default=False)
 @click.option('-v', '--verbose', 'fverbose', help='Enable verbosity mode', is_flag=True, default=False)
 @click.option('--version', is_flag=True, callback=print_version, expose_value=False, is_eager=True)
 @click.pass_context
-def main(ctx, ftype, ext, fadecode, fverbose):
+def main(ctx, fdb, fverbose):
     """
         Data analysis tool for DRS4(PSI) board.
         
@@ -28,28 +29,38 @@ def main(ctx, ftype, ext, fadecode, fverbose):
             - c
         
     """
+    if fadecode:
+        instance = DataStruct(fadecode=True, fverbosity=fverbose)
     print(f"\n{ctx.get_help()}\n")
     ctx.info_name = "run"
     print(main.get_command(ctx, "run").get_help(ctx))
     ctx.info_name = "gencfg"
     print(main.get_command(ctx, "gencfg").get_help(ctx))
-    if ftype == 'txt':
-        log("->TXT")
-    elif ftype == 'xml':
-        log("->XML")
 
-@main.command(short_help="Generate configuration file")
-@click.argument("files", nargs=-1, metavar="<files>")
+@main.command(short_help="Update database")
+@click.option('-f','--format', 'fformat', help='Input file format', default=click.Choice(["xml","PtP", "delay"]), default="PtP", show_default=True)
+@click.option('-a','--auto', 'fauto', help='Recognize file automatically', is_flag=True, default=False)
+@click.argument("files", nargs=-1, metavar="<files or dir>")
 @click.pass_context
-def genCfg(ctx, files):
-    print("gencfg")
+def update(ctx, files, fformat, fauto):
+    if fauto:
+        ctx.obj.auto_recognize(files[0])
+    else:
+        for file in files:
+            ctx.obj.load_file(file, fformat)
 
-@main.command(short_help="Generate output files")
-@click.option('-x','--xxx', 'x', help='Cho', default=None, required=True)
-@click.argument("config", nargs=1, metavar="<config_file>")
+@main.command(short_help="Data description")
 @click.pass_context
-def run(ctx, config, x):
-    log("->RUN", "red")
+def describe(ctx):
+    log("->DEsc", "red")
+
+@main.command(short_help="Generate graphs")
+@click.option("-e", "--ext", "fext", help="Picture extension", default="pdf", type=click.Choice(["pdf", "png"]), show_default=True)
+@click.argument("expression", nargs=-1, metavar="<expression>")
+@click.pass_context
+def plot(ctx, expression, fext):
+    ctx.obj
+
 
 @main.command()
 @click.argument('subcommand')
