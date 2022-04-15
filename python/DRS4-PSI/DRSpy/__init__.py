@@ -1,1 +1,4 @@
-__version__ = "0.9"
+__name__ = "DRSpy"
+__version__ = "1.0"
+__author__  = "aszadzinski"
+__url__ = "https://github.com/aszadzinski/scripts-and-notes/tree/master/python/DRS4-PSI"

@@ -1,7 +1,9 @@
 import os
+import re
 import pandas as pd
 import matplotlib.pyplot as plt
-from DRSpy.main import log, click
+from subprocess import check_output
+from DRSpy.main import click
 
 import  matplotlib
 import linecache
@@ -10,65 +12,58 @@ import  matplotlib.pyplot as plt
 
 from scipy.optimize import curve_fit
 
-class DataStruct():
-    """
-        DataStruct class
-    """
+def log(msg, color="white", wait=False):
+    if wait:    print(click.style(msg, fg=color), end="")
+    else:       print(click.style(msg, fg=color))
+    return None
 
-    def __init__(self, fPtP=[], fdelay=[], fxml=[], fadecode=False, fverbose=False, db_exists=False, fdata=None, fconfig="files.conf"):
-        self._data = pd.DataFrame({"Channel":[], "ChannelX":[], "Delay [ns]":[], "DelayX":[]})
-        # row cuts for files
+class DataStruct():
+    def __init__(self, config_file="drspy.config", drsframe="data.csv", fverbose=False):
+        log(f"-> Creating DRSpy instance")
+        self.drsframe = drsframe
+        self._config_file = config_file
+        self._fverbose = fverbose
+
+        self.check_csv(drsframe)
         self.cuts = {
                         "PtP-CH0"   : [3, 153],
                         "PtP-CH1"   : [158, 308],
                         "Delay"     : [3, 154]}
-        self._fPtP, self._fdelay, self._fxml = fPtP, fdelay, fxml
-        self._fadecode, self._fverbose = fadecode, fverbose
-        self._config = fconfig
-        if fadecode:
-            self._auto_recognize(fadecode)
-        log(f"-> Creating DataFrame: {self.config}")
-        self.init_conf(fconfig)
-        if self._fverbose: log("---> Verbose mode: ", wait=True); log("Enabled", "green")
-        log(f"---> Filename autodecode: ", wait=True); log("Enabled", "green") if fadecode else log("Disabled", "red")
-        log(f"---> Peak-to-Peak files to load: ", wait=True); log(f"{len(fPtP)}","green")
-        log(f"---> Time delay files to load: ", wait=True); log(f"{len(fdelay)}","green")
-        log(f"---> Waveform files to load: ", wait=True); log(f"{len(fdelay)}","green")
+        self.desc()
+
+    def desc(self):
+        log(f"---> Verbose mode: ", wait=True); log("Enabled", "green") if self._fverbose else log("Disabled", "red")
+        log(f"---> Peak-to-Peak files to load: ", wait=True); log(f"{self.nPtP}","green")
+        log(f"---> Time delay files to load: ", wait=True); log(f"{self.ndelay}","green")
+        log(f"---> Waveform files to load: ", wait=True); log(f"{self.nxml}","green")
         log(f"---> Cuts: ", wait=True); log(f"{self.cuts}","green")
-
-    def init_conf(self, new_csv="data.csv"):
+    
+    def conf_parser(self):
+        if os.path.isfile(self._config):
+            pass
+        else:
+            log(f"---> Creating config file {self._config_file}")
+            with open(self._config_file, "r") as file: file.write("#DRSpy config file")
+    
+    def check_csv(self, new_csv):
         if os.path.isfile(new_csv):
-            log(f"-> Configuration file exists: {new_csv} Replace [y/n]?", wait=True)
-            rep = input().upper()
-            if rep == "Y":
-                del self.config
-                #os.remove(new_csv)
-            else:
-                try:
-                    self._data.read_csv(new_csv)
-                except Exception as e:
-                    log(f"---> Failed to load configuration file {new_csv}", "red")
-                else:
-                    
-    @classmethod
-    def import_db(cls, path):
-        log(f"Importint DB {path}: ", wait=True); 
-        new_instance = DataStruct()
-        new_instance.data
+            if self._fverbose: log("-> Configuration file exists: ", wait=True); log(new_csv, "green")
+            self._data = pd.read_csv(f"{new_csv}", index_col=False)
+            self.nxml = 0
+            self.nPtP = 0
+            self.ndelay = 0
+            for col in self.data.columns:
+                if "CH1" in col: self.nPtP += 1
+                if "_t" in col: self.ndelay += 1
+        else:
+            if self._fverbose: log("---> New DataFrame created")
+            self.nxml = 0
+            self.nPtP = 0
+            self.ndelay = 0
+            self._data = pd.DataFrame({"Channel":[], "ChannelX":[], "Delay [ns]":[], "DelayX":[]})
+            self._data.to_csv(f"{self.drsframe}", index=False)
     
-    @property
-    def config(self):
-        return self._config
-    
-    @config.setter
-    def config(self, *args):
-        self._data.read_csv(self.config)
-    
-    @config.deleter
-    def config(self):
-        os.remove(self.config)
-        log(f"---> Deleted configuration file {self.config}", "yellow")
-
+           
     @property
     def data(self):
         return self._data
@@ -77,17 +72,20 @@ class DataStruct():
     def data(self, ns):
         try:
             if self._fverbose: log("---> Updating DataFrame: ", wait=True)
+            self._data.to_csv(f"{self.drsframe}_bck", index=False)
             self._data = pd.merge(self._data, ns, on=list(ns.columns[0:2]),  how="outer")
+            os.remove(f"{self.drsframe}")
+            self._data.to_csv(f"{self.drsframe}", index=False)
+            self.check_csv(self.drsframe)
         except Exception as e:
             log(f"\n---> Updating DF Failed {e}")
         else:
             if self._fverbose: log("Done", "green")
     
-    def auto_recognize(self, path):
+    def auto_recognize(self, path, ftag=""):
         try:
             log("---> Trying to decode files.", wait=True)
             filenames = os.listdir(path)
-            print(filenames)
             txt_files = [file for file in filenames if ".txt" in file]
             xml_files = [file for file in filenames if ".xml" in file]
             xml_files = [ os.path.join(path, f)  for f in xml_files]
@@ -98,42 +96,41 @@ class DataStruct():
             for file in txt_files:
                 try:
                     header = linecache.getline(file, 1)
+                    if self._fverbose: log(f"---> Autorec: found head: {header}, ", "yellow", wait=True)
                 except Exception as e:
                     log(f"\n---> Failed to decode {file} file:  {e}", "red")
                 else:
                     if "Pk-Pk" in header:
                         txt_filesPtP.append(file)
+                        if self._fverbose: log(f"------> P2P, ", "yellow")
                     elif "delay" in header:
                         txt_filesDelay.append(file)
+                        if self._fverbose: log(f"------> Del, ", "yellow")
                     else:
                         log(f"---> Unknow file content {file}. Line 1: {header}", "yellow")
-
         except Exception as e:
             log(f"\n---> Failed to decode files {e}", "red")
         else:
-            self._fPtP.extend(txt_filesPtP)
-            self._fdelay.extend(txt_filesDelay)
-            self._fxml.extend(xml_files)
-            log(f"---> Loaded: {len(xml_files)} .xml, {len(txt_files)} .txt (p2p-{len(txt_filesPtP)}, delay-{len(txt_filesDelay)})")
+            #qself._fPtP.extend(txt_filesPtP)
+            #self._fdelay.extend(txt_filesDelay)
+            #self._fxml.extend(xml_files)
+            log(f"\n---> Detected: {len(xml_files)} .xml, {len(txt_files)} .txt (p2p-{len(txt_filesPtP)}, delay-{len(txt_filesDelay)})")
+            with click.progressbar(txt_filesPtP, label="---> Loading Peak2Peak files: ") as P2Pbar:
+                for P2Pfile in P2Pbar: self.load_file(P2Pfile, "PtP", ftag)
+            with click.progressbar(txt_filesDelay, label="---> Loading Delay files: ") as Dbar:
+                for Dfile in Dbar: self.load_file(Dfile, "delay", ftag)
 
-    def initialize(self, fPtP=True, fdelay=True, fxml=True):
-        if self._fadecode: self._auto_recognize(path)
-        if fPtP:
-            with click.progressbar(self._fPtP, label="---> Loading Peak2Peak files: ") as bar:
-                for file in bar: self.load_file(file, "PtP")
-            log("Done", "green")
-        if fdelay:
-            with click.progressbar(self._fdelay, label="---> Loading Delay files: ") as bar:
-                for file in bar: self.load_file(file, "delay")
-            log("Done", "green")
-        if fxml:
-            pass
-
-    def plot(self, xreg=[], yreg=[], figsize=(12,4), fkind="line",ext="pdf"):
+    def plot(self, xreg="", yreg="", figsize=(12,4), fkind="line",ext="pdf", flive=False, filename="output"):
+        if not flive: matplotlib.use("Agg")
         x = []; y = []
-        for col in self.data.columns:
-            if xreg in col: x.append(col)
-            if yreg in col: y.append(col)
+        rx = re.compile(xreg)
+        ry = re.compile(yreg)
+        columns = list(self.data.columns)
+        #for col in self.data.columns:
+            #if xreg in col: x.append(col)
+            #if yreg in col: y.append(col)
+        x = list(filter(rx.match, columns))
+        y = list(filter(ry.match, columns))
         print(x)
         print(y)
         for xs in x:
@@ -143,23 +140,22 @@ class DataStruct():
                     self.data.plot(xs, ys, kind=fkind, ax=ax)
                 except:
                     print("x")
-            plt.savefig(f"{xs}.{ext}")
+            
+            plt.show() if flive else plt.savefig(f"{filename}.{ext}") 
             plt.clf()
-
         
-
-    def load_file(self, filename, ftype):
+    def load_file(self, filename, ftype, ftag=""):
         header = filename.split("/")[-1]
         if ftype == "PtP":
             try:
-                if self._fverbose: log("---> Converting (CH0, CH1) to DataFrame: ", wait=True)
+                if self._fverbose: log(f"---> Converting (CH0, CH1) to DataFrame: file: {filename}, head: {header}, tag: {ftag}", wait=True)
                 ch0 = pd.read_table(    filename,
                                         skiprows=lambda x: x not in range(self.cuts["PtP-CH0"][0], self.cuts["PtP-CH0"][1]+1),
-                                        names=["Channel", "ChannelX", f"{header[:-4]}-CH0_Counts"])
+                                        names=["Channel", "ChannelX", f"{ftag}{header[:-4]}-CH0"])
                 if self._fverbose: log("(Done, ","green", wait=True)
                 ch1 = pd.read_table(    filename,
                                         skiprows=lambda x: x not in range(self.cuts["PtP-CH1"][0], self.cuts["PtP-CH1"][1]+1),
-                                        names=["Channel", "ChannelX", f"{header[:-4]}-CH1_Counts"])
+                                        names=["Channel", "ChannelX", f"{ftag}{header[:-4]}-CH1"])
                 if self._fverbose: log("Done), ","green", wait=True)
                 log("  ", wait=True)
                 ch01 = pd.merge(ch0,ch1, on=["Channel", "ChannelX"], how="outer")
@@ -173,10 +169,10 @@ class DataStruct():
                 return True
         elif ftype == "delay":
             try:
-                if self._fverbose: log("---> Converting Delay to DataFrame: ", wait=True)
+                if self._fverbose: log(f"---> Converting delay to DataFrame: {filename}, head: {header}, tag: {ftag}", wait=True)
                 _delay = pd.read_table( filename,
                                         skiprows=lambda x: x not in range(self.cuts["Delay"][0], self.cuts["Delay"][1]+1),
-                                        names=["Delay [ns]", "DelayX", f"{header[:-4]}-Delay_Counts"])
+                                        names=["Delay [ns]", "DelayX", f"{ftag}{header[:-4]}"])
                 if self._fverbose: log("Done","green")
             except Exception as e:
                 log(f"\n---> Converting to DataFrame failed. File {filename}: {e}","red")
