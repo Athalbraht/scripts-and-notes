@@ -1,5 +1,6 @@
 import os
 import click
+import DRSpy
 from DRSpy.data_struct import *
 
 def print_version(ctx, param, value):
