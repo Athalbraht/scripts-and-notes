@@ -60,7 +60,7 @@ class DataStruct():
             self.nxml = 0
             self.nPtP = 0
             self.ndelay = 0
-            self._data = pd.DataFrame({"Channel":[], "ChannelX":[], "Delay [ns]":[], "DelayX":[]})
+            self._data = pd.DataFrame({"Channel":[], "CHX":[], "Delay [ns]":[], "DX":[]})
             self._data.to_csv(f"{self.drsframe}", index=False)
     
            
@@ -120,8 +120,11 @@ class DataStruct():
             with click.progressbar(txt_filesDelay, label="---> Loading Delay files: ") as Dbar:
                 for Dfile in Dbar: self.load_file(Dfile, "delay", ftag)
 
-    def plot(self, xreg="", yreg="", figsize=(12,4), fkind="line",ext="pdf", flive=False, filename="output"):
-        if not flive: matplotlib.use("Agg")
+    def get_distance(self, name, spl="_"):
+        return float(name.split(spl)[0])
+
+    def plot(self, xreg="", yreg="", figsize=(12,4), fkind="line",ext="pdf", flive=False, filename="output", regx=False):
+        #if not flive: matplotlib.use("Agg")
         x = []; y = []
         rx = re.compile(xreg)
         ry = re.compile(yreg)
@@ -131,19 +134,22 @@ class DataStruct():
             #if yreg in col: y.append(col)
         x = list(filter(rx.match, columns))
         y = list(filter(ry.match, columns))
-        print(x)
-        print(y)
-        for xs in x:
-            fig, ax = plt.subplots(figsize=figsize)
-            for ys in y:
-                try:
-                    self.data.plot(xs, ys, kind=fkind, ax=ax)
-                except:
-                    print("x")
-            
-            plt.show() if flive else plt.savefig(f"{filename}.{ext}") 
-            plt.clf()
-        
+        if regx:
+            return x,y
+        else:
+            print(x)
+            print(y)
+            for xs in x:
+                fig, ax = plt.subplots(figsize=figsize)
+                for ys in y:
+                    try:
+                        self.data.plot(xs, ys, kind=fkind, ax=ax)
+                    except:
+                        print("x")
+                
+                plt.show() if flive else plt.savefig(f"{filename}.{ext}") 
+                plt.clf()
+
     def load_file(self, filename, ftype, ftag=""):
         header = filename.split("/")[-1]
         if ftype == "PtP":
@@ -151,14 +157,14 @@ class DataStruct():
                 if self._fverbose: log(f"---> Converting (CH0, CH1) to DataFrame: file: {filename}, head: {header}, tag: {ftag}", wait=True)
                 ch0 = pd.read_table(    filename,
                                         skiprows=lambda x: x not in range(self.cuts["PtP-CH0"][0], self.cuts["PtP-CH0"][1]+1),
-                                        names=["Channel", "ChannelX", f"{ftag}{header[:-4]}-CH0"])
+                                        names=["Channel", "CHX", f"{ftag}{header[:-4]}-CH0"])
                 if self._fverbose: log("(Done, ","green", wait=True)
                 ch1 = pd.read_table(    filename,
                                         skiprows=lambda x: x not in range(self.cuts["PtP-CH1"][0], self.cuts["PtP-CH1"][1]+1),
-                                        names=["Channel", "ChannelX", f"{ftag}{header[:-4]}-CH1"])
+                                        names=["Channel", "CHX", f"{ftag}{header[:-4]}-CH1"])
                 if self._fverbose: log("Done), ","green", wait=True)
                 log("  ", wait=True)
-                ch01 = pd.merge(ch0,ch1, on=["Channel", "ChannelX"], how="outer")
+                ch01 = pd.merge(ch0,ch1, on=["Channel", "CHX"], how="outer")
                 if self._fverbose: log("MERGED","green")
 
             except Exception as e:
@@ -172,7 +178,7 @@ class DataStruct():
                 if self._fverbose: log(f"---> Converting delay to DataFrame: {filename}, head: {header}, tag: {ftag}", wait=True)
                 _delay = pd.read_table( filename,
                                         skiprows=lambda x: x not in range(self.cuts["Delay"][0], self.cuts["Delay"][1]+1),
-                                        names=["Delay [ns]", "DelayX", f"{ftag}{header[:-4]}"])
+                                        names=["Delay [ns]", "DX", f"{ftag}{header[:-4]}"])
                 if self._fverbose: log("Done","green")
             except Exception as e:
                 log(f"\n---> Converting to DataFrame failed. File {filename}: {e}","red")
