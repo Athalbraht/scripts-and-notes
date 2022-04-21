@@ -103,7 +103,7 @@ def run(ctx):
     def t_sum(df, v, w):
         ww = df[w]
         vv = df[v]
-        return (ww*vv).sum()/ww.sum()
+        return float((ww*vv).sum()/ww.sum())
 
     def asym(df, c1, c2):
         return  (df[c1] - df[c2])/(df[c1] + df[c2])
@@ -130,44 +130,49 @@ def run(ctx):
     uall_w_l = []
     call_w_l = []
     
-    dw_C = [[],[],[]]
-    dw_U = [[],[],[]]
-    dw_D = [[],[],[]]
-    for dw in rr(ccent, ccent)[0]:
-        dw_C[0].append(nconv(dw))
+    dw_C = [[],[]]
+    dw_U = [[],[]]
+    dw_D = [[],[]]
+    for dw in rr(ccent, ccent)[0]:  
+        print(dw)
+        dw_C[0].append(float(nconv(dw)))
         dw_C[1].append(t_sum(ctx.obj.data, dw, "Delay [ns]"))
-        dw_C[2].append(ctx.obj.data[["Delay [ns]", dw]].to_numpy())
-        print(dw_C)
     for dw in rr(dcent, dcent)[0]:
-        dw_D[0].append(nconv(dw))
+        print(dw)
+        dw_D[0].append(float(nconv(dw)))
         dw_D[1].append(t_sum(ctx.obj.data, dw, "Delay [ns]"))
-        dw_D[2].append(ctx.obj.data[["Delay [ns]", dw]].to_numpy())
-        print(dw_D)
     for dw in rr(ucent, dcent)[0]:
-        dw_U[0].append(nconv(dw))
+        print(dw)
+        dw_U[0].append(float(nconv(dw)))
         dw_U[1].append(t_sum(ctx.obj.data, dw, "Delay [ns]"))
-        dw_U[2].append(ctx.obj.data[["Delay [ns]", dw]].to_numpy())
-        print(dw_U)
+    print("PASS")
+    dw_C = np.array(dw_C,dtype=float)
+    dw_D = np.array(dw_D, dtype=float)
+    dw_U = np.array(dw_U,dtype=float)
+    plt.figure(figsize=(12,7))
     dw_X =  np.linspace(-40,40,100)
     dw_ppc, _ = curve_fit(f_l, dw_C[0], dw_C[1])
     dw_ppu, _ = curve_fit(f_l, dw_U[0], dw_U[1])
     dw_ppd, _ = curve_fit(f_l, dw_D[0], dw_D[1])
+    print("PASS1")
     plt.plot(dw_C[0], dw_C[1],"go", label="Center")
     plt.plot(dw_X, f_l(dw_X,*dw_ppc),"g--", alpha=0.5)
     plt.plot(dw_D[0], dw_D[1], "ro", label="Edge D")
+    print("PASS2")
     plt.plot(dw_X, f_l(dw_X,*dw_ppd),"r--", alpha=0.5)
     plt.plot(dw_U[0], dw_U[1], "bo", label="Edge U")
     plt.plot(dw_X, f_l(dw_X,*dw_ppu),"b--", alpha=0.5)
     plt.legend()
+    print("PASS3")
     plt.grid(True)
     plt.xlabel("Distance [cm]")
     plt.ylabel("Delay [ns] ")
-    plt.show()
+    #plt.show()
+    plt.savefig("delay_avg.pdf")
     plt.clf()
 
-    plt.plot(dw_C[1])
 
-
+    """
     time_C = ".*\-[1-4][0-9]_C.*_t"
     time_D = ".*\-[1-4][0-9]_D.*_t"
     time_U = ".*\-[1-4][0-9]_U.*_t"
@@ -175,19 +180,23 @@ def run(ctx):
     t_U = [[],[]]
     t_D = [[],[]]
 
-    fig, (ax1,ax2,ax3) = plt.subplots(3)
+    print("PASS4")
+    fig, (ax1,ax2,ax3) = plt.subplots(3, figsize=(12,5))
     for i in  rr(time_C,time_C):
         ctx.obj.data.plot.line("Delay [ns]", i, ax=ax1, c="blue", label=False, alpha=0.4)
     ax1.get_legend().remove()
     ax1.set_xlim(-8,2)
     ax1.set_xlabel("")
     ax1.set_title("Center")
+    print("PASS5")
     for i in  rr(time_U,time_C):
         ctx.obj.data.plot.line("Delay [ns]", i, ax=ax2, c="red", label=False, alpha=0.4)
+    print("PASS55")
     ax2.get_legend().remove()
     ax2.set_xlim(-8,2)
     ax2.set_title("Edge U")
     ax2.set_xlabel("")
+    print("PASS6")
     for i in  rr(time_D,time_C):
         ctx.obj.data.plot.line("Delay [ns]", i, ax=ax3, c="green", label=False, alpha=0.4)
     ax3.get_legend().remove()
@@ -195,9 +204,11 @@ def run(ctx):
     ax3.set_title("Edge D")
     ax3.set_xlabel("Delay [ns]")
     
-    plt.show()
+    print("PASS7")
+    #plt.show()
+    plt.savefig("delay_spectrum.pdf")
     plt.clf()
-
+    """
     c_call = ".*-CH[0-1]"
     c0_call = ".*C-CH0"
     c1_call = ".*C-CH1"
@@ -211,7 +222,7 @@ def run(ctx):
     plt.clf()
 
     def landau(X,E,S, N):
-        return 1/np.sqrt(2*np.pi) * np.exp(-((((X-E)/S)+np.exp(-((X-E)/S)))/2)) *N
+        return 1/np.sqrt(2*np.pi) * np.exp(-((((X-E)/S)+np.exp(-((X-E)/S)))/2)) *N 
     cD = []
     uD = []
     dD = []
@@ -231,7 +242,9 @@ def run(ctx):
     dH1e = []
 
     for i,j  in enumerate(cx0): 
-        fig, ax = plt.subplots(1)
+        print(f"XXXXXXXXX {j} ")
+        fl = nconv(j)
+        fig, ax = plt.subplots(1, figsize=(12,7))
         cx_max = np.linspace(10, 160,300)
         cx_x = ctx.obj.data[["Channel", cx0[i], cx1[i]]].dropna().to_numpy().T
         tm = [[],[],[]]
@@ -242,56 +255,8 @@ def run(ctx):
                 tm[1].append(cx_x[1][e])
                 tm[2].append(cx_x[2][e])
         cx_x = np.array(tm)
-
-        try: 
-            ux_x = ctx.obj.data[["Channel", cx0[i].replace("_C","_U"), cx1[i].replace("_C","_U")]].dropna().to_numpy().T
-            um = [[],[],[]]
-            print(cx_x.shape)
-            for e in range(cx_x.shape[1]):
-                if ux_x[1][e] > 40 or ux_x[2][e] >40:
-                    um[0].append(ux_x[0][e])
-                    um[1].append(ux_x[1][e])
-                    um[2].append(ux_x[2][e])
-        except: 
-            print("u")
-        else:
-            ux_x = np.array(ux_x)
-            ux_pp0, _ = curve_fit(landau, ux_x[0],ux_x[1])
-            ux_pp1, _ = curve_fit(landau, ux_x[0],ux_x[2])
-            uD.append(nconv(j))
-            uH0.append(ux_pp0[0])
-            uH1.append(ux_pp1[0])
-            uH0e.append(ux_pp0[1])
-            uH1e.append(ux_pp1[1])
-
-        try:
-            dx_x = ctx.obj.data[["Channel", cx0[i].replace("_C", "_D"), cx1[i].replace("_C", "_D")]].dropna().to_numpy().T
-            dm = [[],[],[]]
-            print(cx_x.shape)
-            for e in range(cx_x.shape[1]):
-                print(e)
-                if dx_x[1][e] > 40 or dx_x[2][e] >40:
-                    dm[0].append(dx_x[0][e])
-                    dm[1].append(dx_x[1][e])
-                    dm[2].append(dx_x[2][e])
-            dx_x = np.array(dx_x)
-            dx_pp0, _ = curve_fit(landau, dx_x[0],dx_x[1])
-            dx_pp1, _ = curve_fit(landau, dx_x[0],dx_x[2])
-            ctx.obj.data.plot.line("Channel", cx0[i].replace("_C", "_D"), ax=ax,alpha=0.7, c="red", markersize=1)
-            ctx.obj.data.plot.line("Channel", cx1[i].replace("_C", "_D"), ax=ax,alpha=0.7,c="green", markersize=1)
-            ax.plot(cx_max, landau(cx_max, *dx_pp0), "r--",alpha=0.9, markersize=1)
-            ax.plot(cx_max, landau(cx_max, *dx_pp1), "g--",alpha=0.9, markersize=1)
-        except:
-            print("d")
-        else:
-            dD.append(nconv(j))
-            dH0.append(dx_pp0[0])
-            dH1.append(dx_pp1[0])
-            dH0e.append(dx_pp0[1])
-            dH1e.append(dx_pp1[1])
-
-        cx_pp0, _ = curve_fit(landau, cx_x[0],cx_x[1])
-        cx_pp1, _ = curve_fit(landau, cx_x[0],cx_x[2])
+        cx_pp0, _ = curve_fit(landau, cx_x[0],cx_x[1], maxfev=6500)
+        cx_pp1, _ = curve_fit(landau, cx_x[0],cx_x[2], maxfev=6500)
         cD.append(nconv(j))
         cH0.append(cx_pp0[0])
         cH1.append(cx_pp1[0])
@@ -301,13 +266,67 @@ def run(ctx):
         ctx.obj.data.plot.line("Channel", cx1[i], ax=ax,alpha=0.7,c="green", markersize=1)
         ax.plot(cx_max, landau(cx_max, *cx_pp0), "r--",alpha=0.9, markersize=1)
         ax.plot(cx_max, landau(cx_max, *cx_pp1), "g--",alpha=0.9, markersize=1)
+
+
+        if j.replace("_C", "_U") in ctx.obj.data.columns:
+            print(f"XXXXXXXXX {j} UUU ")
+            ux_x = ctx.obj.data[["Channel", cx0[i].replace("_C","_U"), cx1[i].replace("_C","_U")]].dropna().to_numpy().T
+            um = [[],[],[]]
+            print(cx_x.shape)
+            for e in range(ux_x.shape[1]):
+                if ux_x[1][e] > 40 or ux_x[2][e] >40:
+                    um[0].append(ux_x[0][e])
+                    um[1].append(ux_x[1][e])
+                    um[2].append(ux_x[2][e])
+            ux_x = np.array(ux_x)
+            ux_pp0, _ = curve_fit(landau, ux_x[0],ux_x[1], maxfev=6500)
+            ux_pp1, _ = curve_fit(landau, ux_x[0],ux_x[2], maxfev=6500)
+            ctx.obj.data.plot.line("Channel", cx0[i].replace("_C", "_U"), ax=ax, c="yellow", markersize=1, alpha=0.7)
+            ctx.obj.data.plot.line("Channel", cx1[i].replace("_C", "_U"), ax=ax,c="black", markersize=1, alpha=0.7)
+            ax.plot(cx_max, landau(cx_max, *ux_pp0), "r--",alpha=0.9, markersize=1)
+            ax.plot(cx_max, landau(cx_max, *ux_pp1), "g--",alpha=0.9, markersize=1)
+            uD.append(nconv(j))
+            uH0.append(ux_pp0[0])
+            uH1.append(ux_pp1[0])
+            uH0e.append(ux_pp0[1])
+            uH1e.append(ux_pp1[1])
+
+        if j.replace("_C", "_D") in ctx.obj.data.columns:
+            print(f"XXXXXXXXX {j} DD ")
+            dx_x = ctx.obj.data[["Channel", cx0[i].replace("_C", "_D"), cx1[i].replace("_C", "_D")]].dropna().to_numpy().T
+            dm = [[],[],[]]
+            print(cx_x.shape)
+            for e in range(dx_x.shape[1]):
+                print(e)
+                if dx_x[1][e] > 2 or dx_x[2][e] >2:
+                    dm[0].append(dx_x[0][e])
+                    dm[1].append(dx_x[1][e])
+                    dm[2].append(dx_x[2][e])
+            if dx_x.shape != (3,0):
+                dx_x = np.array(dx_x)
+                print("size dx")
+                print(dx_x.shape)
+                print(len(dx_x))
+                dx_pp0, _ = curve_fit(landau, dx_x[0],dx_x[1], maxfev=6500)
+                dx_pp1, _ = curve_fit(landau, dx_x[0],dx_x[2], maxfev=6500)
+                ctx.obj.data.plot.line("Channel", cx0[i].replace("_C", "_D"), ax=ax, c="orange", markersize=1, alpha=0.7)
+                ctx.obj.data.plot.line("Channel", cx1[i].replace("_C", "_D"), ax=ax,c="blue", markersize=1,alpha=0.7)
+                ax.plot(cx_max, landau(cx_max, *dx_pp0), "r--",alpha=0.9, markersize=1)
+                ax.plot(cx_max, landau(cx_max, *dx_pp1), "g--",alpha=0.9, markersize=1)
+                dD.append(nconv(j))
+                dH0.append(dx_pp0[0])
+                dH1.append(dx_pp1[0])
+                dH0e.append(dx_pp0[1])
+                dH1e.append(dx_pp1[1])
+
+        print(f"XXXXXXXXX {j} ED ")
         ax.set_xlim(-10,160)
-        
         ax.set_title(f"")
         plt.grid(True)
         plt.ylabel("Counts")
         
-        plt.show()
+        #plt.show()
+        plt.savefig(f"CH_{fl}.pdf")
         ax.cla()
     
     
@@ -319,19 +338,26 @@ def run(ctx):
     print(cD)
     print(cH0)
     print(cH1)
-    wx = np.linspace(np.array(cD).min(), np.array(cD).max(),300)
+    wx = np.linspace(np.array(cD).min(), np.array(cD).max()+50,300)
     pp0, _ = curve_fit(fxx, cD, cH0)
     pp1, _ = curve_fit(fxx, cD, cH1)
     #plt.plot(wx, fxx(wx, *pp0), "r--", alpha=0.5)
     #plt.plot(wx, fxx(wx, *pp1), "g--", alpha=0.5)
-    plt.errorbar(cD, cH0,cH0e, 0.001, "ro",label="CH0", elinewidth=1, capsize=1, markersize=2)
-    plt.errorbar(cD, cH1,cH1e,0.001, "go", label="CH1", elinewidth=1, capsize=1,markersize=2)
+    uD = np.array(uD)
+    dD = np.array(dD)
+    plt.errorbar(cD, cH0,cH0e, 0.001, "ro",label="CH0", elinewidth=1, capsize=1, markersize=6)
+    plt.errorbar(cD, cH1,cH1e,0.001, "go", label="CH1", elinewidth=1, capsize=1,markersize=6)
+    plt.errorbar(uD-3, uH0,uH0e, 0.001, c="yellow", marker="v",label="CH0 Up -3mV", elinewidth=1, capsize=1, markersize=6, alpha=0.7, linewidth=0)
+    plt.errorbar(uD-3, uH1,uH1e,0.001, c="black",marker="v", label="CH1 Up -3mV", elinewidth=1, capsize=1,markersize=6, alpha=0.7, linewidth=0)
+    plt.errorbar(dD+3, dH0,dH0e, 0.001, c="orange", marker="^",label="CH0 Down +3mV", elinewidth=1, capsize=1, markersize=6,alpha=0.7, linewidth=0)
+    plt.errorbar(dD+3, dH1,dH1e,0.001, c="blue", marker="^", label="CH1 Down +3mV", elinewidth=1, capsize=1,markersize=6,alpha=0.7, linewidth=0)
     plt.grid(True)
     plt.legend()
     plt.xlabel("Distance [cm]")
     plt.ylabel("Channel [mV]")
     plt.title("Landau Peaks")
-    plt.show()
+    plt.savefig("landau.pdf")
+    #plt.show()
 
     def moyal(X, E, S, N):
         #xx = (X-E)/S
@@ -348,11 +374,11 @@ def run(ctx):
     xc0x = ctx.obj.data[["Channel", xc0[0]]].dropna().to_numpy().T
     xc0t = np.linspace(xc0x[0].min(), xc0x[0].max(), 300)
     xc0pp, xc0pc = curve_fit(landau, xc0x[0], xc0x[1] )
-    f, ax = plt.subplots()
+    f, ax = plt.subplots(figsize=(12,7))
     ctx.obj.data.plot("Channel", xc0[0],ax=ax,xerr=1)
     plt.plot(xc0t, landau(xc0t, *xc0pp))
     plt.autoscale()
-    plt.show()
+    #plt.show()
     print(xc0pc)
     print(xc0pp)
         

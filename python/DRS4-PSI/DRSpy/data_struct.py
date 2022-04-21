@@ -70,6 +70,7 @@ class DataStruct():
 
     @data.setter
     def data(self, ns):
+        self._data = self._data.astype(float)
         try:
             if self._fverbose: log("---> Updating DataFrame: ", wait=True)
             self._data.to_csv(f"{self.drsframe}_bck", index=False)
