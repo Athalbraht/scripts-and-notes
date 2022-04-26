@@ -11,6 +11,12 @@
 *.sty
 *.nav
 *.pdf
+*.png
+*.csv
+data.*
+*.dat
+*.data
+*data/
 *.toc
 *.vrb
 *.eps
